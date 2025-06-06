@@ -1,0 +1,500 @@
+/**
+ * ドローン大冒険ゲーム - スタイルシート
+ * モバイル対応強化版
+ */
+
+/* 基本スタイル */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; /* タップ時のハイライトを無効化 */
+}
+
+body {
+    font-family: 'Comic Sans MS', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif;
+    background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+    overflow: hidden;
+    user-select: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    touch-action: none; /* 余計なブラウザのタッチアクションを防止 */
+}
+
+/* ゲームキャンバス */
+#gameCanvas {
+    border: 3px solid #FF1493;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(255, 20, 147, 0.5);
+    background: linear-gradient(180deg, #87CEEB 0%, #228B22 100%);
+    max-width: 95vw;
+    max-height: 80vh;
+    display: block; /* 余白を防止 */
+    touch-action: none; /* タッチスクロールを無効化 */
+}
+
+#coinGameCanvas {
+    border: 3px solid gold;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    display: block;
+    touch-action: none;
+}
+
+/* UI要素 */
+#ui {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* 画面 */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    padding: 20px;
+    overflow-y: auto; /* 小さい画面でもスクロールで全体を見られるように */
+    -webkit-overflow-scrolling: touch; /* iOSでのスムーズスクロール */
+}
+
+/* ボタン */
+.screen-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    background: linear-gradient(45deg, #FF1493, #FF69B4);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    margin: 10px;
+    transition: transform 0.2s, background 0.2s;
+    min-width: 180px; /* タップしやすい最小幅 */
+    min-height: 50px; /* タップしやすい最小高さ */
+}
+
+.screen-button:hover, .screen-button:active {
+    transform: scale(1.05);
+    background: linear-gradient(45deg, #FF69B4, #FF1493);
+}
+
+/* 入力フィールド */
+.input-field {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #FF1493;
+    border-radius: 10px;
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 16px;
+    width: 90%;
+    max-width: 400px;
+    min-height: 44px; /* タップしやすい最小高さ */
+}
+
+/* コンテナ */
+.setup-container, .tip-container, .coin-game-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 15px 0;
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+/* モバイルコントロール */
+#mobileControls {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: none; /* 初期状態では非表示、モバイル検出時に表示 */
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 15;
+    pointer-events: none; /* 全体はポインターイベントを無効に */
+}
+
+.joystick-area {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: relative;
+    pointer-events: auto; /* このエリアではポインターイベントを有効に */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.joystick {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.joystick-outer-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    box-sizing: border-box;
+}
+
+.action-button {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 20, 147, 0.6);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    pointer-events: auto; /* このエリアではポインターイベントを有効に */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: transform 0.1s, background-color 0.1s;
+}
+
+.action-button:active {
+    transform: scale(0.9);
+    background-color: rgba(255, 20, 147, 0.8);
+}
+
+/* コインゲーム関連 */
+.coin-game-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.coin-game-timer {
+    color: #FFD700;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.coin-game-count {
+    color: #FFD700;
+    font-size: 24px;
+}
+
+.countdown {
+    font-size: 72px;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* アップグレードボタン */
+.upgrade-options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.upgrade-btn {
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid white;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    min-height: 44px; /* タップしやすい最小高さ */
+    min-width: 120px; /* タップしやすい最小幅 */
+}
+
+.upgrade-btn:hover, .upgrade-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.upgrade-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 投げ銭関連 */
+.amount-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.amount-btn {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid white;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    min-height: 44px; /* タップしやすい最小高さ */
+    min-width: 70px; /* タップしやすい最小幅 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.amount-btn.selected {
+    background: white;
+    color: #FF6B35;
+}
+
+.bonus-info {
+    font-size: 12px;
+    color: #FFD700;
+    margin-top: 4px;
+}
+
+/* QRコード関連 */
+.qr-code-area {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin: 15px auto;
+    max-width: 250px;
+}
+
+.qr-image {
+    border: 1px solid #ddd;
+    padding: 5px;
+    background: white;
+}
+
+.address-display {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    word-break: break-all;
+    margin-bottom: 15px;
+}
+
+/* バリデーションメッセージ */
+.validation-message {
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.validation-message.error {
+    background: rgba(255, 99, 71, 0.3);
+    color: #FF6347;
+}
+
+.validation-message.success {
+    background: rgba(144, 238, 144, 0.3);
+    color: #90EE90;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    /* スマートフォン向け */
+    .screen-button {
+        padding: 12px 24px;
+        font-size: 16px;
+        min-width: 160px;
+    }
+    
+    h1 {
+        font-size: 36px !important;
+    }
+    
+    h2 {
+        font-size: 28px !important;
+    }
+    
+    .setup-container, .tip-container, .coin-game-container {
+        padding: 15px;
+    }
+    
+    .countdown {
+        font-size: 60px;
+    }
+    
+    .upgrade-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* 小型スマートフォン向け */
+    .screen-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        min-width: 140px;
+        margin: 6px;
+    }
+    
+    h1 {
+        font-size: 28px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    h2 {
+        font-size: 22px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .setup-container, .tip-container, .coin-game-container {
+        padding: 12px;
+    }
+    
+    .countdown {
+        font-size: 48px;
+    }
+    
+    #ui {
+        font-size: 12px;
+    }
+    
+    .upgrade-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        min-width: 100px;
+    }
+    
+    .amount-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        min-width: 60px;
+    }
+}
+
+/* 縦向き/横向き対応 */
+@media (orientation: portrait) {
+    /* 縦向き */
+    #mobileControls {
+        bottom: 20px;
+    }
+    
+    #ui {
+        flex-direction: row;
+        flex-wrap: wrap;
+        top: 10px;
+        left: 10px;
+        width: calc(100% - 20px);
+    }
+}
+
+@media (orientation: landscape) {
+    /* 横向き */
+    #mobileControls {
+        bottom: 10px;
+    }
+    
+    #ui {
+        flex-direction: column;
+        top: 10px;
+        left: 10px;
+    }
+    
+    .screen {
+        padding: 10px;
+    }
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.screen {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.screen-button, .upgrade-btn, .amount-btn {
+    animation: slideUp 0.3s ease-out;
+}
+
+/* アクセシビリティ向上 */
+.screen-button:focus, .input-field:focus, .upgrade-btn:focus, .amount-btn:focus {
+    outline: 3px solid rgba(255, 255, 255, 0.5);
+}
+
+/* タッチフィードバック */
+@media (hover: none) {
+    /* タッチデバイスのみ */
+    .screen-button:active, .upgrade-btn:active, .amount-btn:active {
+        transform: scale(0.95);
+        opacity: 0.9;
+    }
+}
+
+/* iOS固有の問題対応 */
+@supports (-webkit-touch-callout: none) {
+    /* iOSデバイスのみ */
+    body {
+        /* iOSでの慣性スクロールを無効化 */
+        -webkit-overflow-scrolling: auto;
+    }
+    
+    .input-field {
+        /* iOSでの入力フィールドのデフォルトスタイルをリセット */
+        -webkit-appearance: none;
+        border-radius: 10px;
+    }
+}
+
+/* Androidの問題対応 */
+@supports not (-webkit-touch-callout: none) {
+    /* Android（非iOS）デバイス */
+    .action-button, .joystick-area {
+        /* Androidでのタッチ操作の反応性向上 */
+        touch-action: manipulation;
+    }
+}
+

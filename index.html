@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚁 3Dドローン大冒険 - 松本・安曇野の空</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            background: linear-gradient(180deg, #87CEEB 0%, #90EE90 100%);
+            overflow: hidden;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #renderer {
+            border: 3px solid #FFD700;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            font-size: 14px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: right;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            padding: 20px;
+            z-index: 100;
+        }
+        
+        #startScreen {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+        }
+        
+        #setupScreen {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: none;
+        }
+        
+        #gameOverScreen {
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+        }
+        
+        #victoryScreen {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            display: none;
+        }
+        
+        #tipScreen {
+            background: linear-gradient(135deg, #f97316, #eab308);
+            display: none;
+        }
+        
+        .screen-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: linear-gradient(45deg, #FF6347, #FF4500);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .screen-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .input-field {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .setup-container, .tip-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 0;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .address-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        
+        .amount-selector {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .amount-btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 15px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .amount-btn.selected {
+            background: white;
+            color: #f97316;
+        }
+        
+        .qr-code-area {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            display: none;
+            color: #333;
+        }
+        
+        .validation-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .success { background: rgba(144, 238, 144, 0.8); color: #065f46; }
+        .error { background: rgba(248, 113, 113, 0.8); color: #7f1d1d; }
+        
+        @media (max-width: 768px) {
+            #ui { font-size: 16px; padding: 10px; }
+            #controls { font-size: 12px; }
+            .screen-button { padding: 12px 24px; font-size: 16px; }
+        }
+        
+        #touchControls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: none;
+            z-index: 15;
+        }
+        
+        .touch-control-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .touch-btn {
+            background: rgba(255, 215, 0, 0.8);
+            border: 2px solid white;
+            border-radius: 15px;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            user-select: none;
+            font-weight: bold;
+        }
+        
+        .touch-btn:active {
+            background: rgba(255, 165, 0, 0.9);
+        }
+        
+        .touch-btn.empty {
+            background: transparent;
+            border: none;
+        }
+        
+        .shoot-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 69, 0, 0.8);
+            margin: 0 auto;
+        }
+        
+        #bossHPBar {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            display: none;
+            z-index: 10;
+        }
+        
+        #bossHP {
+            height: 100%;
+            background: linear-gradient(90deg, #FF4500, #FF6347);
+            border-radius: 8px;
+            transition: width 0.3s;
+        }
+        
+        #bossName {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #FFD700;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="startScreen" class="screen">
+            <h1 class="text-5xl font-bold mb-6">🚁 3Dドローン大冒険 🚁</h1>
+            <p class="text-2xl mb-6">松本・安曇野の空を駆け抜けろ！</p>
+            <p class="text-lg mb-6">投げ銭対応3Dドローンバトルゲーム</p>
+            <button id="setupButton" class="screen-button">⚙️ 配信者設定</button>
+            <button id="startButton" class="screen-button">🎮 ゲームスタート</button>
+        </div>
+
+        <div id="setupScreen" class="screen">
+            <h2 class="text-4xl font-bold mb-6">⚙️ 配信者設定</h2>
+            <div class="setup-container">
+                <p class="mb-4">投げ銭を受け取るXRPウォレットアドレスを設定してください</p>
+                
+                <label class="block mb-2">配信者名（任意）:</label>
+                <input type="text" id="streamerName" class="input-field" placeholder="例: ドローンパイロット" maxlength="20">
+                
+                <label class="block mb-2">XRPウォレットアドレス:</label>
+                <input type="text" id="walletAddress" class="input-field" placeholder="例: rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" maxlength="50">
+                
+                <div id="validationMessage" class="validation-message" style="display: none;"></div>
+                
+                <button id="saveSettingsButton" class="screen-button">💾 設定保存</button>
+                <button id="backToStartButton" class="screen-button">🔙 戻る</button>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" class="screen">
+            <h2 class="text-4xl font-bold mb-6">💥 ミッション失敗</h2>
+            <div id="finalScore" class="text-3xl mb-4 text-yellow-400"></div>
+            <div id="streamerInfo" class="text-xl mb-6"></div>
+            <button id="showTipButton" class="screen-button">💰 投げ銭する</button>
+            <button id="restartButton" class="screen-button">🔄 もう一度プレイ</button>
+            <button id="backToSetupButton" class="screen-button">⚙️ 設定変更</button>
+        </div>
+
+        <div id="victoryScreen" class="screen">
+            <h2 class="text-4xl font-bold mb-6">🎯 ミッションクリア！</h2>
+            <div id="victoryScore" class="text-3xl mb-4 text-yellow-400"></div>
+            <div id="victoryStreamerInfo" class="text-xl mb-6"></div>
+            <p class="text-lg mb-6">松本・安曇野の平和を守りました！</p>
+            <button id="showVictoryTipButton" class="screen-button">💰 投げ銭する</button>
+            <button id="restartVictoryButton" class="screen-button">🔄 もう一度プレイ</button>
+            <button id="backToSetupVictoryButton" class="screen-button">⚙️ 設定変更</button>
+        </div>
+
+        <div id="tipScreen" class="screen">
+            <h2 class="text-3xl font-bold mb-6">💰 投げ銭ありがとう！</h2>
+            <div class="tip-container">
+                <div id="tipStreamerInfo" class="mb-4 text-xl text-yellow-400"></div>
+                <p class="mb-4">よろしければ投げ銭をお願いします！</p>
+                
+                <div class="address-display">
+                    <div class="mb-2">送金先アドレス:</div>
+                    <div id="displayAddress"></div>
+                </div>
+
+                <div class="amount-selector">
+                    <div class="amount-btn selected" data-amount="0.1">0.1 XRP</div>
+                    <div class="amount-btn" data-amount="0.5">0.5 XRP</div>
+                    <div class="amount-btn" data-amount="1.0">1.0 XRP</div>
+                    <div class="amount-btn" data-amount="2.0">2.0 XRP</div>
+                </div>
+
+                <button id="generateQRButton" class="screen-button">📱 QRコード生成</button>
+                
+                <div id="qrCodeArea" class="qr-code-area">
+                    <p class="mb-3 font-bold">Xamanアプリでスキャン</p>
+                    <img id="qrImage" class="w-44 h-44 mx-auto block" alt="XAMAN QR Code">
+                </div>
+                
+                <div id="tipMessage" class="mt-4 font-bold"></div>
+            </div>
+            
+            <button id="backToGameButton" class="screen-button">🔙 ゲームに戻る</button>
+        </div>
+
+        <div id="ui">
+            <div>🚁 HP: <span id="hp">200</span></div>
+            <div>⭐ スコア: <span id="score">0</span></div>
+            <div>🎯 レベル: <span id="level">1</span></div>
+            <div>💫 撃破数: <span id="combo">0</span></div>
+        </div>
+
+        <div id="bossHPBar">
+            <div id="bossName">ボスドローン</div>
+            <div id="bossHP" style="width: 100%"></div>
+        </div>
+
+        <div id="controls">
+            <div>PC: WASDキー移動, Space射撃</div>
+            <div>モバイル: 方向パッド移動, 射撃ボタン</div>
+        </div>
+
+        <div id="touchControls">
+            <div class="touch-control-pad">
+                <div class="touch-btn empty"></div>
+                <div class="touch-btn" id="upBtn">↑</div>
+                <div class="touch-btn empty"></div>
+                <div class="touch-btn" id="leftBtn">←</div>
+                <div class="touch-btn empty"></div>
+                <div class="touch-btn" id="rightBtn">→</div>
+                <div class="touch-btn empty"></div>
+                <div class="touch-btn" id="downBtn">↓</div>
+                <div class="touch-btn empty"></div>
+            </div>
+            <div class="touch-btn shoot-btn" id="shootBtn">🔥</div>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, drone, gameRunning = false;
+        let score = 0, hp = 200, level = 1, combo = 0;
+        let selectedAmount = 0.1;
+        let enemies = [], bullets = [], particles = [], mountains = [];
+        let boss = null, bossHP = 0, bossMaxHP = 500;
+        let isBossLevel = false, gameCleared = false;
+        let streamerSettings = {
+            name: '',
+            address: 'r4Qo5WWskpMpxhHosZKXoSJucyVLug2U97'
+        };
+
+        // タッチコントロール状態
+        let touchState = {
+            up: false, down: false, left: false, right: false, shoot: false
+        };
+
+        // キーボード入力の状態
+        const keys = {}; // ここにkeysオブジェクトを定義
+
+        // 3D環境の初期化
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            // 明るい昼間の空色
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 50, 300);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 25, 40);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            const size = Math.min(window.innerWidth * 0.95, window.innerHeight * 0.95);
+            renderer.setSize(size, size * 0.75);
+            renderer.setClearColor(0x87CEEB);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            document.getElementById('gameContainer').appendChild(renderer.domElement);
+            renderer.domElement.id = 'renderer';
+
+            // 明るいライティング（太陽光）
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            directionalLight.position.set(100, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+            directionalLight.shadow.camera.left = -200;
+            directionalLight.shadow.camera.right = 200;
+            directionalLight.shadow.camera.top = 200;
+            directionalLight.shadow.camera.bottom = -200;
+            scene.add(directionalLight);
+
+            createLandscape();
+            createDrone();
+            setupControls(); // コントロールのイベントリスナーを設定
+        }
+
+        // 松本・安曇野風景の作成
+        function createLandscape() {
+            // 緑の大地（田園風景）
+            const groundGeometry = new THREE.PlaneGeometry(200, 200);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -30;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // 遠くの山々（北アルプス風）
+            for (let i = 0; i < 8; i++) {
+                const mountainGeometry = new THREE.ConeGeometry(15 + Math.random() * 10, 40 + Math.random() * 20, 8);
+                const mountainMaterial = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color().setHSL(0.3, 0.4, 0.4 + Math.random() * 0.2)
+                });
+                const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
+                mountain.position.set(
+                    (Math.random() - 0.5) * 300,
+                    -20 + Math.random() * 10,
+                    -100 - Math.random() * 50
+                );
+                mountain.rotation.y = Math.random() * Math.PI * 2;
+                mountains.push(mountain);
+                scene.add(mountain);
+            }
+
+            // 雲
+            for (let i = 0; i < 6; i++) {
+                const cloudGeometry = new THREE.SphereGeometry(8 + Math.random() * 5, 8, 8);
+                const cloudMaterial = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+                cloud.position.set(
+                    (Math.random() - 0.5) * 150,
+                    20 + Math.random() * 20,
+                    -20 - Math.random() * 80
+                );
+                scene.add(cloud);
+            }
+
+            // 田んぼの区画
+            for (let i = 0; i < 10; i++) {
+                const fieldGeometry = new THREE.PlaneGeometry(8, 12);
+                const fieldMaterial = new THREE.MeshLambertMaterial({
+                    color: new THREE.Color().setHSL(0.25, 0.6, 0.4 + Math.random() * 0.2)
+                });
+                const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
+                field.rotation.x = -Math.PI / 2;
+                field.position.set(
+                    (Math.random() - 0.5) * 80,
+                    -29,
+                    (Math.random() - 0.5) * 80
+                );
+                scene.add(field);
+            }
+        }
+
+        // プレイヤードローンの作成
+        function createDrone() {
+            const droneGroup = new THREE.Group();
+            
+            // ドローン本体（より詳細）
+            const bodyGeometry = new THREE.BoxGeometry(4, 1.5, 7);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x1E90FF });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            droneGroup.add(body);
+            
+            // カメラ部分
+            const cameraGeometry = new THREE.SphereGeometry(0.8, 8, 8);
+            const cameraMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const camera = new THREE.Mesh(cameraGeometry, cameraMaterial);
+            camera.position.set(0, -1, 3);
+            droneGroup.add(camera);
+            
+            // プロペラアーム
+            for (let i = 0; i < 4; i++) {
+                const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 4, 8);
+                const armMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+                const arm = new THREE.Mesh(armGeometry, armMaterial);
+                const angle = (i * Math.PI) / 2;
+                arm.position.set(Math.cos(angle) * 3, 0.5, Math.sin(angle) * 3);
+                arm.rotation.z = angle;
+                droneGroup.add(arm);
+                
+                // プロペラ
+                const propGeometry = new THREE.CylinderGeometry(1.8, 1.8, 0.1, 8);
+                const propMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
+                const prop = new THREE.Mesh(propGeometry, propMaterial);
+                prop.position.set(Math.cos(angle) * 3, 1.5, Math.sin(angle) * 3);
+                prop.userData = { rotation: 0 };
+                droneGroup.add(prop);
+            }
+            
+            droneGroup.position.set(0, 0, 0);
+            drone = droneGroup;
+            drone.userData = {
+                vx: 0, vy: 0, vz: 0,
+                targetX: 0, targetY: 0, targetZ: 0,
+                tiltX: 0, tiltZ: 0,
+                prevX: 0, prevY: 0 // 追加: 傾き計算用
+            };
+            scene.add(drone);
+        }
+
+        // 敵ドローンの作成
+        function createEnemyDrone() {
+            const enemyGroup = new THREE.Group();
+            
+            // 敵ドローン本体
+            const bodyGeometry = new THREE.BoxGeometry(2.5, 1, 4);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0xFF4500 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            enemyGroup.add(body);
+            
+            // 敵プロペラ
+            for (let i = 0; i < 4; i++) {
+                const propGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.1, 6);
+                const propMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+                const prop = new THREE.Mesh(propGeometry, propMaterial);
+                const angle = (i * Math.PI) / 2;
+                prop.position.set(Math.cos(angle) * 2, 1, Math.sin(angle) * 2);
+                prop.userData = { rotation: 0 };
+                enemyGroup.add(prop);
+            }
+            
+            enemyGroup.position.set(
+                (Math.random() - 0.5) * 50,
+                10 + Math.random() * 15,
+                -60 - Math.random() * 20
+            );
+            enemyGroup.castShadow = true;
+            enemyGroup.userData = {
+                speed: 0.4 + level * 0.1 + Math.random() * 0.3,
+                hp: 1, // 1発で倒せる
+                type: 'enemy'
+            };
+            enemies.push(enemyGroup);
+            scene.add(enemyGroup);
+        }
+
+        // ボスドローンの作成
+        function createBoss() {
+            const bossGroup = new THREE.Group();
+            
+            // ボス本体（大型）
+            const bodyGeometry = new THREE.BoxGeometry(8, 3, 12);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            bossGroup.add(body);
+            
+            // ボス装甲
+            const armorGeometry = new THREE.BoxGeometry(6, 1, 10);
+            const armorMaterial = new THREE.MeshLambertMaterial({ color: 0x2F4F4F });
+            const armor = new THREE.Mesh(armorGeometry, armorMaterial);
+            armor.position.y = 2;
+            bossGroup.add(armor);
+            
+            // ボスプロペラ（6個）
+            for (let i = 0; i < 6; i++) {
+                const propGeometry = new THREE.CylinderGeometry(2.5, 2.5, 0.2, 8);
+                const propMaterial = new THREE.MeshLambertMaterial({ color: 0x1C1C1C });
+                const prop = new THREE.Mesh(propGeometry, propMaterial);
+                const angle = (i * Math.PI) / 3;
+                prop.position.set(Math.cos(angle) * 5, 2, Math.sin(angle) * 5);
+                prop.userData = { rotation: 0 };
+                bossGroup.add(prop);
+            }
+            
+            bossGroup.position.set(0, 15, -80);
+            bossGroup.userData = {
+                speed: 0.2,
+                hp: bossMaxHP,
+                type: 'boss',
+                movePattern: 0,
+                lastShot: 0
+            };
+            
+            boss = bossGroup;
+            bossHP = bossMaxHP;
+            enemies.push(boss); // ボスもenemies配列に含める
+            scene.add(bossGroup);
+            
+            // ボスHPバー表示
+            document.getElementById('bossHPBar').style.display = 'block';
+            updateBossHP();
+        }
+
+        // 弾丸の作成
+        function createBullet() {
+            const bulletGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+            const bulletMaterial = new THREE.MeshLambertMaterial({ color: 0x00FF00 });
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            bullet.position.copy(drone.position);
+            bullet.position.y += 2;
+            bullet.userData = { speed: 3, damage: 1 };
+            bullets.push(bullet);
+            scene.add(bullet);
+        }
+
+        // 敵の弾丸
+        function createEnemyBullet(position) {
+            const bulletGeometry = new THREE.SphereGeometry(0.3, 6, 6);
+            const bulletMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            bullet.position.copy(position);
+            bullet.userData = { speed: 1.5, damage: 15, type: 'enemy' };
+            bullets.push(bullet);
+            scene.add(bullet);
+        }
+
+        // パーティクル効果
+        function createExplosion(position, color = 0xFFFF00) {
+            for (let i = 0; i < 20; i++) {
+                const particleGeometry = new THREE.SphereGeometry(0.3, 4, 4);
+                const particleMaterial = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(color)
+                });
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                particle.position.copy(position);
+                particle.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 3,
+                        Math.random() * 3,
+                        (Math.random() - 0.5) * 3
+                    ),
+                    life: 40
+                };
+                particles.push(particle);
+                scene.add(particle);
+            }
+        }
+
+        // --- 修正開始 ---
+        // コントロール設定（イベントリスナーのセットアップのみ）
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    if (gameRunning) createBullet();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+            // タッチコントロール
+            document.getElementById('upBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState.up = true;
+            });
+            document.getElementById('upBtn').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState.up = false;
+            });
+
+            document.getElementById('downBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState.down = true;
+            });
+            document.getElementById('downBtn').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState.down = false;
+            });
+
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState.left = true;
+            });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState.left = false;
+            });
+
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState.right = true;
+            });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState.right = false;
+            });
+
+            document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameRunning) createBullet();
+            });
+
+            // モバイル検出とタッチコントロール表示
+            if ('ontouchstart' in window) {
+                document.getElementById('touchControls').style.display = 'block';
+            }
+        }
+
+        // コントロールの状態を更新する関数（gameLoopから呼ばれる）
+        function updateControls() {
+            if (!gameRunning) return;
+            
+            // キーボードとタッチコントロールのロジック
+            if (keys['w'] || keys['W'] || keys['ArrowUp'] || touchState.up) {
+                drone.userData.targetY = 15;
+            }
+            if (keys['s'] || keys['S'] || keys['ArrowDown'] || touchState.down) {
+                drone.userData.targetY = -5;
+            }
+            if (keys['a'] || keys['A'] || keys['ArrowLeft'] || touchState.left) {
+                drone.userData.targetX = -20;
+            }
+            if (keys['d'] || keys['D'] || keys['ArrowRight'] || touchState.right) {
+                drone.userData.targetX = 20;
+            }
+            
+            // 中央に戻る
+            if (!keys['w'] && !keys['W'] && !keys['ArrowUp'] && !touchState.up &&
+                !keys['s'] && !keys['S'] && !keys['ArrowDown'] && !touchState.down) {
+                drone.userData.targetY = 0;
+            }
+            if (!keys['a'] && !keys['A'] && !keys['ArrowLeft'] && !touchState.left &&
+                !keys['d'] && !keys['D'] && !keys['ArrowRight'] && !touchState.right) {
+                drone.userData.targetX = 0;
+            }
+        }
+        // --- 修正終了 ---
+
+        // ボスHP更新
+        function updateBossHP() {
+            const percentage = (bossHP / bossMaxHP) * 100;
+            document.getElementById('bossHP').style.width = percentage + '%';
+        }
+
+        // ゲームループ
+        let lastTimestamp = 0;
+        const targetFrameRate = 60; // FPS (フレームレート)
+        const frameInterval = 1000 / targetFrameRate; // 1フレームあたりの時間 (ミリ秒)
+
+        function gameLoop(timestamp) {
+            // gameRunningがfalseでもrequestAnimationFrameを呼び続けることで、
+            // ゲーム開始時にアニメーションが再開できるようにする
+            requestAnimationFrame(gameLoop);
+
+            if (!gameRunning) {
+                lastTimestamp = timestamp; // ゲームが一時停止している場合、タイムスタンプをリセット
+                return;
+            }
+
+            const delta = timestamp - lastTimestamp; // 経過時間
+            lastTimestamp = timestamp;
+
+            // 1秒あたりの動きを調整するための係数 (例えば、60FPSで1.0の速度になるように)
+            const speedFactor = delta / (1000 / 60);
+
+            updateControls(); // グローバルになったupdateControlsを呼び出す
+
+            // ドローンの動き
+            const userData = drone.userData;
+            // 速度と傾きを調整
+            drone.position.x += (userData.targetX - drone.position.x) * 0.08 * speedFactor;
+            drone.position.y += (userData.targetY - drone.position.y) * 0.08 * speedFactor;
+            
+            // 移動範囲制限
+            drone.position.x = Math.max(-25, Math.min(25, drone.position.x));
+            drone.position.y = Math.max(-10, Math.min(20, drone.position.y));
+            
+            // ドローンの傾き
+            userData.tiltX = THREE.MathUtils.lerp(userData.tiltX, -(drone.position.x - (drone.userData.prevX || drone.position.x)) * 0.1, 0.1);
+            userData.tiltZ = THREE.MathUtils.lerp(userData.tiltZ, (drone.position.y - (drone.userData.prevY || drone.position.y)) * 0.1, 0.1);
+            drone.rotation.x = userData.tiltZ;
+            drone.rotation.z = userData.tiltX;
+            drone.userData.prevX = drone.position.x;
+            drone.userData.prevY = drone.position.y;
+
+
+            // プロペラの回転
+            drone.children.forEach((child) => {
+                if (child.userData && child.userData.rotation !== undefined) {
+                    child.userData.rotation += 1.0 * speedFactor; // プロペラ回転を速く
+                    child.rotation.y = child.userData.rotation;
+                }
+            });
+
+            // ボスレベル判定
+            if (score >= 500 && !isBossLevel && !boss) {
+                isBossLevel = true;
+                createBoss();
+            }
+
+            // 通常敵の生成（ボス戦以外）
+            if (!isBossLevel && Math.random() < 0.02 + level * 0.005) { // 敵の出現頻度を少し調整
+                createEnemyDrone();
+            }
+
+            // 敵とボスの行動
+            enemies.forEach((enemy, index) => {
+                if (enemy.userData.type === 'boss') {
+                    // ボスの動き
+                    enemy.userData.movePattern += 0.01 * speedFactor; // ボスの動きを滑らかに
+                    enemy.position.x = Math.sin(enemy.userData.movePattern) * 20; // 動きの幅を広げる
+                    
+                    // ボスの攻撃
+                    if (Date.now() - enemy.userData.lastShot > 800) { // ボスの攻撃頻度を上げる
+                        createEnemyBullet(enemy.position);
+                        enemy.userData.lastShot = Date.now();
+                    }
+                } else {
+                    // 通常敵の動き
+                    enemy.position.z += enemy.userData.speed * speedFactor;
+                    enemy.children.forEach((child) => {
+                        if (child.userData && child.userData.rotation !== undefined) {
+                            child.userData.rotation += 0.5 * speedFactor;
+                            child.rotation.y = child.userData.rotation;
+                        }
+                    });
+
+                    // 敵が画面外に出たら削除
+                    if (enemy.position.z > camera.position.z + 10) {
+                        scene.remove(enemy);
+                        enemies.splice(index, 1);
+                        // 敵が画面外に出てもHP減少などのペナルティは今はなし
+                    }
+                }
+            });
+
+            // 弾丸の更新
+            bullets.forEach((bullet, index) => {
+                if (bullet.userData.type === 'enemy') {
+                    bullet.position.z += bullet.userData.speed * speedFactor;
+                    // ドローンとの衝突判定
+                    const distance = bullet.position.distanceTo(drone.position);
+                    if (distance < 3) { // 衝突
+                        hp -= bullet.userData.damage;
+                        document.getElementById('hp').innerText = Math.max(0, hp);
+                        createExplosion(bullet.position, 0xFF0000); // 赤い爆発
+                        scene.remove(bullet);
+                        bullets.splice(index, 1);
+                        if (hp <= 0) {
+                            gameOver();
+                        }
+                    } else if (bullet.position.z > camera.position.z + 10) {
+                        scene.remove(bullet);
+                        bullets.splice(index, 1);
+                    }
+                } else {
+                    bullet.position.z -= bullet.userData.speed * speedFactor;
+                    // 敵との衝突判定
+                    enemies.forEach((enemy, enemyIndex) => {
+                        const distance = bullet.position.distanceTo(enemy.position);
+                        if (distance < (enemy.userData.type === 'boss' ? 8 : 3)) { // ボスは当たり判定を大きく
+                            enemy.userData.hp -= bullet.userData.damage;
+                            createExplosion(bullet.position);
+                            scene.remove(bullet);
+                            bullets.splice(index, 1);
+
+                            if (enemy.userData.hp <= 0) {
+                                createExplosion(enemy.position, 0xFFA500); // オレンジ色の爆発
+                                scene.remove(enemy);
+                                enemies.splice(enemyIndex, 1);
+                                combo++;
+                                score += (enemy.userData.type === 'boss' ? 1000 : 100) + (combo * 10);
+                                document.getElementById('combo').innerText = combo;
+                                document.getElementById('score').innerText = score;
+
+                                if (enemy.userData.type === 'boss') {
+                                    gameCleared = true;
+                                    gameEnd(true); // ボス撃破でゲームクリア
+                                }
+                            } else if (enemy.userData.type === 'boss') {
+                                bossHP = enemy.userData.hp;
+                                updateBossHP();
+                            }
+                        }
+                    });
+                    if (bullet) { // 弾丸がまだ存在する場合
+                        if (bullet.position.z < -100) {
+                            scene.remove(bullet);
+                            bullets.splice(index, 1);
+                        }
+                    }
+                }
+            });
+
+            // パーティクルの更新
+            particles.forEach((particle, index) => {
+                particle.position.add(particle.userData.velocity.clone().multiplyScalar(speedFactor));
+                particle.material.opacity -= 0.02 * speedFactor;
+                particle.userData.life -= 1 * speedFactor;
+                if (particle.userData.life <= 0 || particle.material.opacity <= 0) {
+                    scene.remove(particle);
+                    particles.splice(index, 1);
+                }
+            });
+
+            // UI更新
+            if (gameRunning) {
+                document.getElementById('hp').innerText = Math.max(0, hp);
+                document.getElementById('score').innerText = score;
+                document.getElementById('level').innerText = level; // レベル表示は適宜更新ロジックを実装
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('victoryScreen').style.display = 'none';
+            document.getElementById('tipScreen').style.display = 'none';
+            document.getElementById('bossHPBar').style.display = 'none'; // ボスHPバーを非表示に
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('controls').style.display = 'block';
+            if ('ontouchstart' in window) {
+                document.getElementById('touchControls').style.display = 'block';
+            }
+
+            // ゲームの状態をリセット
+            score = 0;
+            hp = 200;
+            level = 1;
+            combo = 0;
+            isBossLevel = false;
+            gameCleared = false;
+            boss = null;
+
+            // 既存のオブジェクトをすべて削除
+            enemies.forEach(enemy => scene.remove(enemy));
+            bullets.forEach(bullet => scene.remove(bullet));
+            particles.forEach(particle => scene.remove(particle));
+            enemies = [];
+            bullets = [];
+            particles = [];
+
+            // ドローンの位置をリセット
+            drone.position.set(0, 0, 0);
+            drone.userData.targetX = 0;
+            drone.userData.targetY = 0;
+            drone.rotation.x = 0;
+            drone.rotation.z = 0;
+
+            gameRunning = true;
+            // requestAnimationFrame(gameLoop); // gameLoopは常に呼び出し続けるので不要
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            document.getElementById('finalScore').innerText = `最終スコア: ⭐ ${score}`;
+            updateStreamerInfo('streamerInfo');
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('touchControls').style.display = 'none';
+            document.getElementById('bossHPBar').style.display = 'none';
+        }
+
+        function gameEnd(victory = false) {
+            gameRunning = false;
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('touchControls').style.display = 'none';
+            document.getElementById('bossHPBar').style.display = 'none'; // ボスHPバーを非表示に
+
+            if (victory) {
+                document.getElementById('victoryScreen').style.display = 'flex';
+                document.getElementById('victoryScore').innerText = `最終スコア: ⭐ ${score}`;
+                updateStreamerInfo('victoryStreamerInfo');
+            } else {
+                gameOver();
+            }
+        }
+
+        function updateStreamerInfo(elementId) {
+            const infoElement = document.getElementById(elementId);
+            if (streamerSettings.name) {
+                infoElement.innerText = `配信者: ${streamerSettings.name}`;
+            } else if (streamerSettings.address) {
+                infoElement.innerText = `投げ銭アドレス設定済み`;
+            } else {
+                infoElement.innerText = `配信者設定なし`;
+            }
+        }
+
+        // XRPウォレットアドレスの正規表現 (rで始まり、40文字未満の英数字)
+        const xrpAddressRegex = /^r[0-9a-zA-Z]{25,34}$/; // XRPアドレスの一般的な長さ
+
+        document.getElementById('setupButton').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'flex';
+            // 保存済みの設定があれば読み込む
+            document.getElementById('streamerName').value = streamerSettings.name;
+            document.getElementById('walletAddress').value = streamerSettings.address;
+        });
+
+        document.getElementById('saveSettingsButton').addEventListener('click', () => {
+            const newName = document.getElementById('streamerName').value.trim();
+            const newAddress = document.getElementById('walletAddress').value.trim();
+            const validationMessage = document.getElementById('validationMessage');
+
+            if (newAddress === '' || xrpAddressRegex.test(newAddress)) {
+                streamerSettings.name = newName;
+                streamerSettings.address = newAddress;
+                localStorage.setItem('streamerSettings', JSON.stringify(streamerSettings));
+                validationMessage.innerText = '設定が保存されました！';
+                validationMessage.className = 'validation-message success';
+                validationMessage.style.display = 'block';
+                setTimeout(() => {
+                    validationMessage.style.display = 'none';
+                    document.getElementById('setupScreen').style.display = 'none';
+                    document.getElementById('startScreen').style.display = 'flex';
+                }, 1500);
+            } else {
+                validationMessage.innerText = '有効なXRPウォレットアドレスを入力してください。';
+                validationMessage.className = 'validation-message error';
+                validationMessage.style.display = 'block';
+            }
+        });
+
+        document.getElementById('backToStartButton').addEventListener('click', () => {
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+            document.getElementById('validationMessage').style.display = 'none';
+        });
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+        document.getElementById('restartButton').addEventListener('click', startGame);
+        document.getElementById('restartVictoryButton').addEventListener('click', startGame);
+
+        document.getElementById('backToSetupButton').addEventListener('click', () => {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'flex';
+            document.getElementById('streamerName').value = streamerSettings.name;
+            document.getElementById('walletAddress').value = streamerSettings.address;
+        });
+
+        document.getElementById('backToSetupVictoryButton').addEventListener('click', () => {
+            document.getElementById('victoryScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'flex';
+            document.getElementById('streamerName').value = streamerSettings.name;
+            document.getElementById('walletAddress').value = streamerSettings.address;
+        });
+
+        // 投げ銭画面表示
+        document.getElementById('showTipButton').addEventListener('click', () => showTipScreen());
+        document.getElementById('showVictoryTipButton').addEventListener('click', () => showTipScreen());
+
+        function showTipScreen() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('victoryScreen').style.display = 'none';
+            document.getElementById('tipScreen').style.display = 'flex';
+            document.getElementById('displayAddress').innerText = streamerSettings.address;
+            updateStreamerInfo('tipStreamerInfo');
+            document.getElementById('qrCodeArea').style.display = 'none';
+            document.getElementById('tipMessage').innerText = '';
+
+            // 投げ銭金額の選択ボタンのイベントリスナー
+            document.querySelectorAll('.amount-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedAmount = parseFloat(this.dataset.amount);
+                });
+            });
+            document.querySelector('.amount-btn[data-amount="0.1"]').classList.add('selected'); // 初期選択
+            selectedAmount = 0.1;
+        }
+
+        document.getElementById('generateQRButton').addEventListener('click', () => {
+            const address = streamerSettings.address;
+            if (!address || !xrpAddressRegex.test(address)) {
+                document.getElementById('tipMessage').innerText = '有効なウォレットアドレスが設定されていません。';
+                document.getElementById('tipMessage').className = 'error';
+                return;
+            }
+
+            const xamanUrl = `https://xaman.app/sign/rP1j1v48Y89Q5CqXk1q7W3m1k1e1r1c1b1?to=${address}&amount=${selectedAmount}`;
+            document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(xamanUrl)}`;
+            document.getElementById('qrCodeArea').style.display = 'block';
+            document.getElementById('tipMessage').innerText = 'XamanアプリでQRコードをスキャンしてください。';
+            document.getElementById('tipMessage').className = 'success';
+        });
+
+        document.getElementById('backToGameButton').addEventListener('click', () => {
+            document.getElementById('tipScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex'; // 投げ銭後もタイトル画面に戻る
+        });
+
+        // 初期設定の読み込み
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedSettings = localStorage.getItem('streamerSettings');
+            if (savedSettings) {
+                streamerSettings = JSON.parse(savedSettings);
+            }
+            initThreeJS();
+            // ゲームループを一度開始しておけば、gameRunningがfalseの間はレンダリングだけが行われる
+            requestAnimationFrame(gameLoop);
+        });
+
+        // ウィンドウリサイズ対応
+        window.addEventListener('resize', () => {
+            const size = Math.min(window.innerWidth * 0.95, window.innerHeight * 0.95);
+            renderer.setSize(size, size * 0.75);
+            camera.aspect = size / (size * 0.75);
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
